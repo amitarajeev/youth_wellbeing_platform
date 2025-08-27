@@ -1,0 +1,66 @@
+/* ================================
+   TAG SELECTORS
+   ================================ */
+h1 {
+  text-align: center;
+  margin-top: 20px;
+  color: #0d6efd; /* Bootstrap primary blue */
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+p {
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+
+/* ================================
+   CLASS SELECTORS
+   ================================ */
+.section-highlight {
+  background-color: #e9f5ff; /* soft blue background */
+  border-left: 5px solid #0d6efd;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+.btn-custom {
+  background-color: #0d6efd;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 20px;
+}
+
+.btn-custom:hover {
+  background-color: #084298;
+}
+
+
+/* ================================
+   ID SELECTORS
+   ================================ */
+#login-form input:focus,
+#register-form input:focus {
+  border-color: #ff6347; /* Tomato */
+  background-color: #fff4f2; /* light coral background */
+  outline: none;
+}
+
+
+/* ================================
+   ATTRIBUTE SELECTORS
+   ================================ */
+input[type="email"] {
+  border: 2px solid #ced4da;
+  background-color: #f9f9f9;
+}
+
+input[type="email"]:focus {
+  border-color: #0d6efd;
+  background-color: #fff;
+}
+
+button[type="submit"] {
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
