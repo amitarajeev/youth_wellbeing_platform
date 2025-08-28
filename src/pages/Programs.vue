@@ -1,17 +1,17 @@
 <template>
   <div>
     <h1>Programs</h1>
-    <p class="text-muted">Browse our workshops and support sessions.</p>
-
-    <!-- Will integrate ProgramTable.vue here -->
-    <p class="text-secondary">[Program list coming soon]</p>
+    <p class="text-muted">Browse, register, or create youth wellbeing programs.</p>
+    <ProgramTable />
   </div>
 </template>
 
 <script setup>
-// will later import ProgramTable.vue
+import ProgramTable from '../components/ProgramTable.vue'
 </script>
 
 <style scoped>
-/* local styles if needed */
+h1 {
+  margin-bottom: 1rem;
+}
 </style>
