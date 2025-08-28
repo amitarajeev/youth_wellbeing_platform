@@ -8,6 +8,9 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
 import 'primeicons/primeicons.css'
+import 'primevue/resources/themes/aura-light-blue/theme.css'
+import 'primevue/resources/primevue.min.css'
+
 
 // Global Styles
 import './style.css'
