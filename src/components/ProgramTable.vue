@@ -65,8 +65,9 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { DataTable } from 'primevue/datatable'
-import { Column } from 'primevue/column'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+
 
 const defaultPrograms = [
   { id: 1, title: 'Managing Anxiety', topic: 'Anxiety', date: '2025-09-10', mode: 'Online', seats: 12 },
