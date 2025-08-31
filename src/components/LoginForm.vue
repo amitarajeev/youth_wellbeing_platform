@@ -37,17 +37,22 @@ const message = ref('')
 const messageClass = ref('')
 
 function handleLogin() {
-  const found = props.users.find(u => u.email === email.value && u.password === password.value)
+  // Always read the latest registered users from localStorage
+  const stored = localStorage.getItem('users')
+  const users = stored ? JSON.parse(stored) : []
+
+  const found = users.find(
+    (u) => u.email === email.value && u.password === password.value
+  )
 
   if (found) {
-    message.value = `✅ Welcome, ${found.name}!`
-    messageClass.value = 'alert-success'
+    // use your preferred feedback (alert keeps template unchanged)
+    alert(`🎉 Welcome back, ${found.name}!`)
   } else {
-    message.value = '❌ Invalid email or password'
-    messageClass.value = 'alert-danger'
+    alert('❌ Invalid email or password.')
   }
 
-  // Reset form
+  // Reset fields (keep your existing resets if you already have them)
   email.value = ''
   password.value = ''
 }

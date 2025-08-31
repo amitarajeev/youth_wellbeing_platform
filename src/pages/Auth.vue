@@ -1,41 +1,42 @@
 <template>
-  <section class="page-section">
-    <div class="container">
-      <h2 class="page-title">User Authentication</h2>
-      <div class="row g-4">
-        
-        <!-- Register Form -->
-        <div class="col-md-6">
-          <div class="auth-card shadow-sm p-4">
-            <h3 class="mb-3">Register</h3>
-            <RegisterForm :users="users" @update:users="users = $event" />
-          </div>
-        </div>
+  <div class="container py-5">
+    <h2 class="text-center mb-4">User Authentication</h2>
+    <div class="row">
+      <!-- Register -->
+      <div class="col-md-6">
+        <RegisterForm 
+          :users="users" 
+          @update-users="updateUsers" 
+          @clear-users="clearUsers" 
+        />
+      </div>
 
-        <!-- Login Form -->
-        <div class="col-md-6">
-          <div class="auth-card shadow-sm p-4">
-            <h3 class="mb-3">Login</h3>
-            <LoginForm :users="users" />
-          </div>
-        </div>
+      <!-- Login -->
+      <div class="col-md-6">
+        <LoginForm :users="users" />
       </div>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import RegisterForm from '../components/RegisterForm.vue'
 import LoginForm from '../components/LoginForm.vue'
 
 const users = ref([])
 
-onMounted(() => {
-  const stored = localStorage.getItem('users')
-  users.value = stored ? JSON.parse(stored) : []
-})
+// Update user list when RegisterForm emits
+function updateUsers(updated) {
+  users.value = updated
+}
+
+// Clear all users
+function clearUsers() {
+  users.value = []
+}
 </script>
+
 
 <style scoped>
 .page-section {

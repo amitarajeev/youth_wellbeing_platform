@@ -74,24 +74,52 @@ watch(users, (val) => {
 }, { deep: true })
 
 function handleRegister() {
-  if (password.value.length < 6) {
+  // basic length check (keep your current checks if you already have them)
+  if (!password.value || password.value.length < 6) {
     alert('Password must be at least 6 characters.')
     return
   }
 
-  users.value.push({
+  // Always read the latest list from localStorage (source of truth)
+  const stored = localStorage.getItem('users')
+  const currentUsers = stored ? JSON.parse(stored) : []
+
+  // Normalize email for duplicate detection (trim + lowercase)
+  const newEmail = (email.value || '').trim().toLowerCase()
+
+  const isDuplicate = currentUsers.some(
+    (u) => (u.email || '').trim().toLowerCase() === newEmail
+  )
+
+  if (isDuplicate) {
+    alert('An account with this email already exists. Please log in or use a different email.')
+    return
+  }
+
+  // Add the new user
+  const newUser = {
     id: Date.now(),
     name: name.value,
     email: email.value,
     role: role.value,
-    password: password.value // 
-  })
+    password: password.value, // keep storing password for login check
+  }
 
-  // Reset form
+  const updated = [...currentUsers, newUser]
+
+  // Update storage and your reactive table
+  localStorage.setItem('users', JSON.stringify(updated))
+  if (Array.isArray(users.value)) {
+    users.value = updated
+  }
+
+  // Reset form fields
   name.value = ''
   email.value = ''
   role.value = ''
   password.value = ''
+
+  alert('✅ Registered successfully!')
 }
 
 function clearUsers() {
