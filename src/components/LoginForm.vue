@@ -1,65 +1,56 @@
 <template>
-  <form id="login-form" class="form mt-4" @submit.prevent="handleLogin">
-    <h2>Login</h2>
+  <div>
+    <form id="login-form" class="form mt-4" @submit.prevent="handleLogin">
+      <h2>Login</h2>
 
-    <!-- Email -->
-    <div class="mb-3">
-      <label for="email" class="form-label">Email address</label>
-      <input
-        v-model="email"
-        type="email"
-        id="email"
-        class="form-control"
-        placeholder="Enter your email"
-        required
-      />
-      <div v-if="emailError" class="text-danger small">{{ emailError }}</div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input v-model="email" type="email" id="email" class="form-control" required />
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input v-model="password" type="password" id="password" class="form-control" required />
+      </div>
+
+      <button type="submit" class="btn btn-custom">Login</button>
+    </form>
+
+    <!-- Feedback message -->
+    <div v-if="message" class="alert mt-3" :class="messageClass">
+      {{ message }}
     </div>
-
-    <!-- Password -->
-    <div class="mb-3">
-      <label for="password" class="form-label">Password</label>
-      <input
-        v-model="password"
-        type="password"
-        id="password"
-        class="form-control"
-        placeholder="Enter your password"
-        required
-      />
-      <div v-if="passwordError" class="text-danger small">{{ passwordError }}</div>
-    </div>
-
-    <!-- Submit -->
-    <button type="submit" class="btn btn-custom">Login</button>
-  </form>
+  </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 
+// Props: registered users come from Auth.vue
+const props = defineProps({
+  users: { type: Array, required: true }
+})
+
 const email = ref('')
 const password = ref('')
-const emailError = ref('')
-const passwordError = ref('')
+const message = ref('')
+const messageClass = ref('')
 
+// Handle login
 function handleLogin() {
-  emailError.value = ''
-  passwordError.value = ''
+  const found = props.users.find(u => u.email === email.value && u.password === password.value)
 
-  // Validation 1: Email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email.value)) {
-    emailError.value = 'Please enter a valid email address.'
+  if (found) {
+    message.value = `✅ Welcome, ${found.name}!`
+    messageClass.value = 'alert-success'
+  } else {
+    message.value = '❌ Invalid email or password'
+    messageClass.value = 'alert-danger'
   }
 
-  // Validation 2: Password length
-  if (password.value.length < 6) {
-    passwordError.value = 'Password must be at least 6 characters.'
-  }
-
-  if (!emailError.value && !passwordError.value) {
-    alert(`Login successful for ${email.value}`)
-  }
+  // Reset fields
+  email.value = ''
+  password.value = ''
 }
 </script>
+

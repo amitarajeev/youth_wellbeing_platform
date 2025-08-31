@@ -26,8 +26,9 @@
         <div class="col-md-3">
           <input v-model.number="newProgram.seats" type="number" class="form-control" placeholder="Seats" required min="1" />
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 d-flex gap-2">
           <button type="submit" class="btn btn-custom">Add Program</button>
+          <button type="button" class="btn btn-custom-secondary" @click="clearPrograms">Clear Programs</button>
         </div>
       </div>
     </form>
@@ -68,7 +69,6 @@ import { ref, onMounted, watch } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
-
 const defaultPrograms = [
   { id: 1, title: 'Managing Anxiety', topic: 'Anxiety', date: '2025-09-10', mode: 'Online', seats: 12 },
   { id: 2, title: 'Sleep and Mindfulness', topic: 'Sleep', date: '2025-09-15', mode: 'In-person', seats: 8 },
@@ -78,18 +78,17 @@ const defaultPrograms = [
 const programs = ref([])
 const newProgram = ref({ title: '', topic: '', date: '', mode: '', seats: 1 })
 
-// Load existing programs
+// Load programs
 onMounted(() => {
   const stored = localStorage.getItem('programs')
-  programs.value = stored ? JSON.parse(stored) : defaultPrograms
+  programs.value = stored ? JSON.parse(stored) : [...defaultPrograms]
 })
 
-// Persist to localStorage
+// Save programs
 watch(programs, (val) => {
   localStorage.setItem('programs', JSON.stringify(val))
 }, { deep: true })
 
-// Add new program
 function addProgram() {
   programs.value.push({
     id: Date.now(),
@@ -98,14 +97,20 @@ function addProgram() {
   newProgram.value = { title: '', topic: '', date: '', mode: '', seats: 1 }
 }
 
-// Register for program
+// Register
 function registerProgram(program) {
   if (program.seats > 0) {
     program.seats -= 1
     alert(`You registered for: ${program.title}`)
   }
 }
+
+// ✅ Clear only user-added programs, keep defaults
+function clearPrograms() {
+  programs.value = [...defaultPrograms]
+}
 </script>
+
 
 <style scoped>
 h2 {

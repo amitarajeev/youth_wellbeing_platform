@@ -3,21 +3,27 @@ import App from './App.vue'
 
 // Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'
+import "bootstrap/dist/js/bootstrap.bundle.min.js"
+
 
 // PrimeVue
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
 import 'primeicons/primeicons.css'
 
-// Router
-import router from './router'
-
 // Global Styles
 import './style.css'
+
+// Router
+import router from './router'
 
 const app = createApp(App)
 
 app.use(router)
-app.use(PrimeVue, { theme: { preset: Aura } })
+app.use(PrimeVue, {
+  theme: {
+    preset: Aura,
+  },
+})
 
 app.mount('#app')

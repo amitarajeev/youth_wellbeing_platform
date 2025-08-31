@@ -1,7 +1,7 @@
 <template>
   <div>
     <form id="register-form" class="form mt-4" @submit.prevent="handleRegister">
-      <h2>Register</h2>
+      <h3>Register</h3>
 
       <div class="mb-3">
         <label for="name" class="form-label">Full Name</label>
@@ -27,11 +27,14 @@
         <input v-model="password" type="password" id="password" class="form-control" required />
       </div>
 
-      <button type="submit" class="btn btn-custom">Register</button>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-custom">Register</button>
+        <button type="button" class="btn btn-secondary" @click="clearUsers">Clear Users</button>
+      </div>
     </form>
 
     <!-- Registration Table -->
-    <h3 class="mt-5">Registered Users</h3>
+    <h4 class="mt-4">Registered Users</h4>
     <DataTable :value="users" paginator :rows="5" responsiveLayout="scroll">
       <Column field="name" header="Name" sortable />
       <Column field="email" header="Email" sortable />
@@ -42,8 +45,8 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { DataTable } from 'primevue/datatable'
-import { Column } from 'primevue/column'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 
 const name = ref('')
 const email = ref('')

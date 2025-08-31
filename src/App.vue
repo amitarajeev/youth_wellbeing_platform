@@ -1,8 +1,5 @@
 <template>
   <div id="app">
-    <!-- Safety Banner -->
-    <SafetyBanner />
-
     <!-- Navigation -->
     <NavBar />
 
@@ -10,6 +7,9 @@
     <main class="container my-4">
       <router-view />
     </main>
+
+    <!-- Safety Banner -->
+    <SafetyBanner />
 
     <!-- Footer -->
     <Footer />
