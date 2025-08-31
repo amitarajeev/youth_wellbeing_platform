@@ -3,13 +3,11 @@
     <form id="register-form" class="form mt-4" @submit.prevent="handleRegister" novalidate>
       <h2>Register</h2>
 
-      <!-- Name -->
       <div class="mb-3">
         <label for="name" class="form-label">Full Name</label>
         <input v-model.trim="name" type="text" id="name" class="form-control" required />
       </div>
 
-      <!-- Email -->
       <div class="mb-3">
         <label for="email" class="form-label">Email</label>
         <input
@@ -20,7 +18,6 @@
           :class="{'is-invalid': submitAttempted && !emailValid}"
           required
         />
-        <!-- Email invalid messages -->
         <div class="invalid-feedback" v-if="submitAttempted && !emailFormatValid">
           Please enter a valid email address (e.g., name@example.com).
         </div>
@@ -29,7 +26,6 @@
         </div>
       </div>
 
-      <!-- Role -->
       <div class="mb-3">
         <label class="form-label">Role</label>
         <select v-model="role" class="form-select" required>
@@ -39,7 +35,6 @@
         </select>
       </div>
 
-      <!-- Password -->
       <div class="mb-3">
         <label for="password" class="form-label">Password</label>
         <input
@@ -50,7 +45,6 @@
           :class="{'is-invalid': submitAttempted && !passwordValid}"
           required
         />
-        <!-- Password invalid messages (Bootstrap invalid-feedback) -->
         <div class="invalid-feedback" v-if="submitAttempted && !passwordValid">
           <ul class="mb-0 ps-3">
             <li v-if="!hasMinLen">At least 8 characters</li>
@@ -67,7 +61,6 @@
       <button type="button" class="btn btn-custom ms-2" @click="clearUsers">Clear Users</button>
     </form>
 
-    <!-- Registration Table -->
     <h3 class="mt-5">Registered Users</h3>
     <div class="table-responsive-fluid">
       <DataTable
@@ -90,6 +83,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column  from 'primevue/column'
+import { hashPassword, sanitize } from '@/utils/security'
 
 const name = ref('')
 const email = ref('')
@@ -97,8 +91,8 @@ const role = ref('')
 const password = ref('')
 
 const users = ref([])
+const submitAttempted = ref(false)
 
-/* ---------- Load & persist users (source of truth = localStorage) ---------- */
 onMounted(() => {
   const stored = localStorage.getItem('users')
   users.value = stored ? JSON.parse(stored) : []
@@ -108,58 +102,44 @@ watch(users, (val) => {
   localStorage.setItem('users', JSON.stringify(val))
 }, { deep: true })
 
-/* --------------------- Validation state & rules --------------------- */
-const submitAttempted = ref(false)
-
-// Email: format + uniqueness
+/* Email validation */
 const emailFormatValid = computed(() =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value || '')
 )
-
 const emailUnique = computed(() => {
   const normalized = (email.value || '').trim().toLowerCase()
-  return !users.value.some(
-    u => (u.email || '').trim().toLowerCase() === normalized
-  )
+  return !users.value.some(u => (u.email || '').trim().toLowerCase() === normalized)
 })
-
 const emailValid = computed(() => emailFormatValid.value && emailUnique.value)
 
-// Password rules
+/* Password validation */
 const hasMinLen  = computed(() => (password.value || '').length >= 8)
 const hasUpper   = computed(() => /[A-Z]/.test(password.value || ''))
 const hasLower   = computed(() => /[a-z]/.test(password.value || ''))
 const hasDigit   = computed(() => /\d/.test(password.value || ''))
 const hasSpecial = computed(() => /[^A-Za-z0-9\s]/.test(password.value || ''))
 const noSpaces   = computed(() => !/\s/.test(password.value || ''))
-
 const passwordValid = computed(() =>
-  hasMinLen.value && hasUpper.value && hasLower.value &&
-  hasDigit.value && hasSpecial.value && noSpaces.value
+  hasMinLen.value && hasUpper.value && hasLower.value && hasDigit.value && hasSpecial.value && noSpaces.value
 )
 
-/* --------------------- Submit handler --------------------- */
-function handleRegister() {
+async function handleRegister() {
   submitAttempted.value = true
+  if (!emailValid.value || !passwordValid.value || !name.value.trim() || !role.value) return
 
-  // Let browser required fields also participate, but block submit when our rules fail
-  if (!emailValid.value || !passwordValid.value || !name.value.trim() || !role.value) {
-    // keep the invalid feedbacks visible
-    return
-  }
+  const hashed = await hashPassword(password.value)
 
-  // Add the new user
   const newUser = {
     id: Date.now(),
-    name: name.value.trim(),
-    email: email.value.trim(),
+    name: sanitize(name.value),
+    email: (email.value || '').trim(),
     role: role.value,
-    password: password.value, // stored for login check
+    // store hashed only
+    passwordHash: hashed,
   }
 
   users.value = [...users.value, newUser]
 
-  // Reset form
   name.value = ''
   email.value = ''
   role.value = ''
@@ -180,18 +160,7 @@ form {
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
-
-h2 {
-  font-weight: 600;
-  margin-bottom: 15px;
-}
-
-h3 {
-  margin-top: 30px;
-  font-weight: 600;
-}
-
-button {
-  margin-top: 10px;
-}
+h2 { font-weight: 600; margin-bottom: 15px; }
+h3 { margin-top: 30px; font-weight: 600; }
+button { margin-top: 10px; }
 </style>

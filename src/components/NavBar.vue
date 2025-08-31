@@ -32,6 +32,9 @@
           <li class="nav-item">
             <router-link to="/auth" class="nav-link" active-class="active">Login</router-link>
           </li>
+          <li class="nav-item">
+            <router-link to="/reviews" class="nav-link" active-class="active">Reviews</router-link>
+          </li>
         </ul>
       </div>
     </div>

@@ -1,61 +1,49 @@
 <template>
-  <div>
-    <form id="login-form" class="form mt-4" @submit.prevent="handleLogin">
-      <h2>Login</h2>
+  <form @submit.prevent="handleLogin" class="mt-4">
+    <h3>Login</h3>
 
-      <div class="mb-3">
-        <label for="email" class="form-label">Email</label>
-        <input v-model="email" type="email" id="email" class="form-control" required />
-      </div>
-
-      <div class="mb-3">
-        <label for="password" class="form-label">Password</label>
-        <input v-model="password" type="password" id="password" class="form-control" required />
-      </div>
-
-      <button type="submit" class="btn btn-custom">Login</button>
-    </form>
-
-    <!-- Feedback message -->
-    <div v-if="message" class="alert mt-3" :class="messageClass">
-      {{ message }}
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input v-model.trim="email" type="email" class="form-control" required />
     </div>
-  </div>
+
+    <div class="mb-3">
+      <label class="form-label">Password</label>
+      <input v-model="password" type="password" class="form-control" required />
+    </div>
+
+    <button type="submit" class="btn btn-custom">Login</button>
+  </form>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-
-// ✅ Get registered users from Auth.vue
-const props = defineProps({
-  users: { type: Array, required: true }
-})
+import { useRouter } from 'vue-router'
+import { hashPassword } from '@/utils/security'
+import { useAuth } from '@/composables/useAuth'
 
 const email = ref('')
 const password = ref('')
-const message = ref('')
-const messageClass = ref('')
+const router = useRouter()
+const { loginUser } = useAuth()
 
-function handleLogin() {
-  // Always read the latest registered users from localStorage
-  const stored = localStorage.getItem('users')
-  const users = stored ? JSON.parse(stored) : []
+async function handleLogin() {
+  const normalized = (email.value || '').trim().toLowerCase()
+  const users = JSON.parse(localStorage.getItem('users') || '[]')
+  const user = users.find(u => (u.email || '').trim().toLowerCase() === normalized)
 
-  const found = users.find(
-    (u) => u.email === email.value && u.password === password.value
-  )
-
-  if (found) {
-    // use your preferred feedback (alert keeps template unchanged)
-    alert(`🎉 Welcome back, ${found.name}!`)
-  } else {
-    alert('❌ Invalid email or password.')
+  if (!user) {
+    alert('Invalid credentials.')
+    return
   }
 
-  // Reset fields (keep your existing resets if you already have them)
-  email.value = ''
-  password.value = ''
+  const hashed = await hashPassword(password.value)
+  if (hashed !== user.passwordHash) {
+    alert('Invalid credentials.')
+    return
+  }
+
+  loginUser(user)
+  router.push({ name: 'home' })
 }
 </script>
-
-
