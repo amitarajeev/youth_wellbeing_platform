@@ -1,7 +1,7 @@
 <template>
   <div>
     <form id="register-form" class="form mt-4" @submit.prevent="handleRegister">
-      <h3>Register</h3>
+      <h2>Register</h2>
 
       <div class="mb-3">
         <label for="name" class="form-label">Full Name</label>
@@ -27,14 +27,12 @@
         <input v-model="password" type="password" id="password" class="form-control" required />
       </div>
 
-      <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-custom">Register</button>
-        <button type="button" class="btn btn-secondary" @click="clearUsers">Clear Users</button>
-      </div>
+      <button type="submit" class="btn btn-custom">Register</button>
+      <button type="button" class="btn btn-danger ms-2" @click="clearUsers">Clear Users</button>
     </form>
 
     <!-- Registration Table -->
-    <h4 class="mt-4">Registered Users</h4>
+    <h3 class="mt-5">Registered Users</h3>
     <DataTable :value="users" paginator :rows="5" responsiveLayout="scroll">
       <Column field="name" header="Name" sortable />
       <Column field="email" header="Email" sortable />
@@ -45,8 +43,8 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
+import { DataTable } from 'primevue/datatable'
+import { Column } from 'primevue/column'
 
 const name = ref('')
 const email = ref('')
@@ -77,6 +75,7 @@ function handleRegister() {
     name: name.value,
     email: email.value,
     role: role.value,
+    password: password.value // 
   })
 
   // Reset form
@@ -84,6 +83,11 @@ function handleRegister() {
   email.value = ''
   role.value = ''
   password.value = ''
+}
+
+function clearUsers() {
+  users.value = []
+  localStorage.removeItem('users') // 
 }
 </script>
 

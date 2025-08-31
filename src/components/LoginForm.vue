@@ -26,7 +26,7 @@
 <script setup>
 import { ref } from 'vue'
 
-// Props: registered users come from Auth.vue
+// ✅ Get registered users from Auth.vue
 const props = defineProps({
   users: { type: Array, required: true }
 })
@@ -36,7 +36,6 @@ const password = ref('')
 const message = ref('')
 const messageClass = ref('')
 
-// Handle login
 function handleLogin() {
   const found = props.users.find(u => u.email === email.value && u.password === password.value)
 
@@ -48,9 +47,10 @@ function handleLogin() {
     messageClass.value = 'alert-danger'
   }
 
-  // Reset fields
+  // Reset form
   email.value = ''
   password.value = ''
 }
 </script>
+
 
