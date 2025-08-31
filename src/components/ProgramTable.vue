@@ -27,8 +27,9 @@
           <input v-model.number="newProgram.seats" type="number" class="form-control" placeholder="Seats" required min="1" />
         </div>
         <div class="col-md-3 d-flex gap-2">
-          <button type="submit" class="btn btn-custom">Add Program</button>
-          <button type="button" class="btn btn-custom-secondary" @click="clearPrograms">Clear Programs</button>
+          <button class="btn btn-custom" @click="clearForm">Clear Form</button>
+          <button class="btn btn-custom" @click="clearPrograms">Clear Programs</button>
+
         </div>
       </div>
     </form>
@@ -41,14 +42,13 @@
       :rows="5"
       responsiveLayout="scroll"
       sortMode="multiple"
-      class="p-datatable-sm shadow-sm"
+      class="p-datatable-sm shadow-sm table-responsive"
     >
       <Column field="title" header="Title" sortable />
       <Column field="topic" header="Topic" sortable />
       <Column field="date" header="Date" sortable />
       <Column field="mode" header="Mode" sortable />
       <Column field="seats" header="Seats Left" sortable />
-
       <Column header="Action" bodyClass="text-center">
         <template #body="slotProps">
           <button
@@ -61,6 +61,7 @@
         </template>
       </Column>
     </DataTable>
+
   </div>
 </template>
 

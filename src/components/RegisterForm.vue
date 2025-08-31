@@ -28,23 +28,32 @@
       </div>
 
       <button type="submit" class="btn btn-custom">Register</button>
-      <button type="button" class="btn btn-danger ms-2" @click="clearUsers">Clear Users</button>
+      <button type="button" class="btn btn-custom ms-2" @click="clearUsers">Clear Users</button>
+
+
     </form>
 
     <!-- Registration Table -->
     <h3 class="mt-5">Registered Users</h3>
-    <DataTable :value="users" paginator :rows="5" responsiveLayout="scroll">
-      <Column field="name" header="Name" sortable />
-      <Column field="email" header="Email" sortable />
-      <Column field="role" header="Role" sortable />
-    </DataTable>
+    <DataTable 
+      :value="users" 
+      paginator 
+      :rows="5" 
+      responsiveLayout="scroll" 
+      class="p-datatable-sm shadow-sm table-responsive"
+    >
+  <Column field="name" header="Name" sortable />
+  <Column field="email" header="Email" sortable />
+  <Column field="role" header="Role" sortable />
+</DataTable>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { DataTable } from 'primevue/datatable'
-import { Column } from 'primevue/column'
+import DataTable from 'primevue/datatable'
+import Column  from 'primevue/column'
 
 const name = ref('')
 const email = ref('')

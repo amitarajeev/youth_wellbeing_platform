@@ -101,3 +101,13 @@ footer {
   text-align: center;
   font-size: 0.9rem;
 }
+
+
+/* Fix DataTable responsiveness on small screens */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.p-datatable-wrapper {
+  min-width: 600px; /* ensures columns don’t shrink too much */
+}
