@@ -1,32 +1,65 @@
-// src/composables/useAuth.js
-import { ref, computed } from 'vue'
+// useAuth.js
+import { sanitize, makeSalt, hashPassword } from './security';
 
-const _currentUser = ref(loadUser())
+const USERS_KEY = 'users';
+const SESSION_KEY = 'session';
 
-function loadUser() {
-  try {
-    return JSON.parse(localStorage.getItem('currentUser') || 'null')
-  } catch {
-    return null
-  }
+export function getUsers() {
+  const arr = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+  return Array.isArray(arr) ? arr : [];
+}
+export function saveUsers(arr) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(arr));
 }
 
-export function useAuth() {
-  const isLoggedIn = computed(() => !!_currentUser.value)
-  const role = computed(() => _currentUser.value?.role || null)
+export async function registerUser({ name, email, role, password }) {
+  const users = getUsers();
 
-  function loginUser(user) {
-    // Never keep password in memory
-    const safe = { ...user }
-    delete safe.password
-    localStorage.setItem('currentUser', JSON.stringify(safe))
-    _currentUser.value = safe
+  const emailNorm = (email || '').trim().toLowerCase();
+  if (users.some(u => (u.email || '').toLowerCase() === emailNorm)) {
+    throw new Error('An account with this email already exists.');
   }
 
-  function logoutUser() {
-    localStorage.removeItem('currentUser')
-    _currentUser.value = null
-  }
+  // create salted hash
+  const salt = makeSalt();
+  const hash = await hashPassword(password, salt);
 
-  return { currentUser: _currentUser, isLoggedIn, role, loginUser, logoutUser }
+  users.push({
+    id: Date.now(),
+    name: sanitize(name),
+    email: emailNorm,         // stored normalised
+    role,                     // 'youth' | 'caregiver' | 'admin'
+    salt,
+    hash                      // no plaintext password
+  });
+  saveUsers(users);
+}
+
+export async function login({ email, password }) {
+  const users = getUsers();
+  const emailNorm = (email || '').trim().toLowerCase();
+  const user = users.find(u => u.email === emailNorm);
+  if (!user) return null;
+
+  const candidate = await hashPassword(password, user.salt);
+  if (candidate !== user.hash) return null;
+
+  const session = { id: user.id, name: user.name, email: user.email, role: user.role };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  return session;
+}
+
+export function currentUser() {
+  const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+  return s;
+}
+export function logout() {
+  localStorage.removeItem(SESSION_KEY);
+}
+export function hasRole(role) {
+  const s = currentUser();
+  return !!s && s.role === role;
+}
+export function isAuthed() {
+  return !!currentUser();
 }
