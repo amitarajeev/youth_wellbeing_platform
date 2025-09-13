@@ -10,20 +10,7 @@
 
       <div class="mb-3">
         <label for="email" class="form-label">Email</label>
-        <input
-          v-model.trim="email"
-          type="email"
-          id="email"
-          class="form-control"
-          :class="{'is-invalid': submitAttempted && !emailValid}"
-          required
-        />
-        <div class="invalid-feedback" v-if="submitAttempted && !emailFormatValid">
-          Please enter a valid email address (e.g., name@example.com).
-        </div>
-        <div class="invalid-feedback" v-else-if="submitAttempted && !emailUnique">
-          An account with this email already exists. Please use a different email or log in.
-        </div>
+        <input v-model.trim="email" type="email" id="email" class="form-control" required />
       </div>
 
       <div class="mb-3">
@@ -37,53 +24,36 @@
 
       <div class="mb-3">
         <label for="password" class="form-label">Password</label>
-        <input
-          v-model="password"
-          type="password"
-          id="password"
-          class="form-control"
-          :class="{'is-invalid': submitAttempted && !passwordValid}"
-          required
-        />
-        <div class="invalid-feedback" v-if="submitAttempted && !passwordValid">
-          <ul class="mb-0 ps-3">
-            <li v-if="!hasMinLen">At least 8 characters</li>
-            <li v-if="!hasUpper">At least one uppercase letter (A–Z)</li>
-            <li v-if="!hasLower">At least one lowercase letter (a–z)</li>
-            <li v-if="!hasDigit">At least one digit (0–9)</li>
-            <li v-if="!hasSpecial">At least one special character (!@#$%^&* etc.)</li>
-            <li v-if="!noSpaces">Must not contain spaces</li>
-          </ul>
-        </div>
+        <input v-model="password" type="password" id="password" class="form-control" required />
       </div>
 
       <button type="submit" class="btn btn-custom">Register</button>
       <button type="button" class="btn btn-custom ms-2" @click="clearUsers">Clear Users</button>
     </form>
 
+    <!-- Registration Table -->
     <h3 class="mt-5">Registered Users</h3>
-    <div class="table-responsive-fluid">
-      <DataTable
-        :value="users"
-        paginator
-        :rows="5"
-        responsiveLayout="stack"
-        breakpoint="992px"
-        class="p-datatable-sm shadow-sm"
-      >
-        <Column field="name" header="Name" sortable />
-        <Column field="email" header="Email" sortable />
-        <Column field="role" header="Role" sortable />
-      </DataTable>
-    </div>
+    <DataTable 
+      :value="users" 
+      paginator 
+      :rows="5" 
+      responsiveLayout="scroll" 
+      class="p-datatable-sm shadow-sm table-responsive"
+    >
+      <Column field="name" header="Name" sortable />
+      <Column field="email" header="Email" sortable />
+      <Column field="role" header="Role" sortable />
+    </DataTable>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column  from 'primevue/column'
-import { hashPassword, sanitize } from '@/utils/security'
+
+import { registerUser, getUsers, logout } from '@/composables/useAuth'     // ← secure helpers
+import { sanitize } from '@/utils/security'                           // ← for any free text you persist
 
 const name = ref('')
 const email = ref('')
@@ -91,65 +61,51 @@ const role = ref('')
 const password = ref('')
 
 const users = ref([])
-const submitAttempted = ref(false)
 
 onMounted(() => {
-  const stored = localStorage.getItem('users')
-  users.value = stored ? JSON.parse(stored) : []
+  users.value = getUsers()
 })
 
-watch(users, (val) => {
-  localStorage.setItem('users', JSON.stringify(val))
-}, { deep: true })
-
-/* Email validation */
-const emailFormatValid = computed(() =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value || '')
-)
-const emailUnique = computed(() => {
-  const normalized = (email.value || '').trim().toLowerCase()
-  return !users.value.some(u => (u.email || '').trim().toLowerCase() === normalized)
-})
-const emailValid = computed(() => emailFormatValid.value && emailUnique.value)
-
-/* Password validation */
-const hasMinLen  = computed(() => (password.value || '').length >= 8)
-const hasUpper   = computed(() => /[A-Z]/.test(password.value || ''))
-const hasLower   = computed(() => /[a-z]/.test(password.value || ''))
-const hasDigit   = computed(() => /\d/.test(password.value || ''))
-const hasSpecial = computed(() => /[^A-Za-z0-9\s]/.test(password.value || ''))
-const noSpaces   = computed(() => !/\s/.test(password.value || ''))
-const passwordValid = computed(() =>
-  hasMinLen.value && hasUpper.value && hasLower.value && hasDigit.value && hasSpecial.value && noSpaces.value
-)
+function strongPassword(pw) {
+  // ≥8 chars, at least one upper, lower, digit, special, and no spaces
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/.test(pw) && !/\s/.test(pw)
+}
 
 async function handleRegister() {
-  submitAttempted.value = true
-  if (!emailValid.value || !passwordValid.value || !name.value.trim() || !role.value) return
-
-  const hashed = await hashPassword(password.value)
-
-  const newUser = {
-    id: Date.now(),
-    name: sanitize(name.value),
-    email: (email.value || '').trim(),
-    role: role.value,
-    // store hashed only
-    passwordHash: hashed,
+  // Optional UX check (useAuth also validates/normalises)
+  if (!strongPassword(password.value)) {
+    alert('Password must be 8+ chars, include upper/lower, a digit, a special character, and no spaces.')
+    return
   }
 
-  users.value = [...users.value, newUser]
+  try {
+    await registerUser({
+      name: name.value,       // useAuth sanitises before persisting
+      email: email.value,
+      role: role.value,       // must be one of: youth | caregiver | admin (if you use admin)
+      password: password.value
+    })
 
-  name.value = ''
-  email.value = ''
-  role.value = ''
-  password.value = ''
-  submitAttempted.value = false
+    // Refresh table from canonical storage
+    users.value = getUsers()
+
+    // Reset fields
+    name.value = ''
+    email.value = ''
+    role.value = ''
+    password.value = ''
+
+    alert('✅ Registered successfully!')
+  } catch (err) {
+    alert(err?.message || 'Registration failed.')
+  }
 }
 
 function clearUsers() {
-  users.value = []
+  // Clear users and any logged-in session
   localStorage.removeItem('users')
+  users.value = []
+  logout()
 }
 </script>
 
