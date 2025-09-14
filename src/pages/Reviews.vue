@@ -1,6 +1,6 @@
 <template>
   <section class="container py-4">
-    <h2 class="mb-3">Program Reviews</h2>
+    <h1 class="mb-3">Program Reviews</h1>
 
     <form @submit.prevent="submitReview" class="mb-4">
       <div class="row g-2">
@@ -67,38 +67,33 @@ import { useRoute } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Rating from 'primevue/rating'
-import { sanitize } from '../utils/security'
-import { useAuth } from '../composables/useAuth'
+import { sanitize } from '../utils/security'        // relative path
+import useAuth from '../composables/useAuth'        // ⬅️ import the OBJECT, not a function
 
-const { currentUser, isLoggedIn } = useAuth()
 const route = useRoute()
 
+// reactive state
 const programs = ref([])
-const reviews = ref([])
+const reviews  = ref([])
 
 const programId = ref('')
-const rating = ref(0)
-const comment = ref('')
+const rating    = ref(0)
+const comment   = ref('')
 
 const defaults = [
-  { id: 1, title: 'Managing Anxiety', topic: 'Anxiety', date: '2025-09-10', mode: 'Online', seats: 12, isDefault: true },
-  { id: 2, title: 'Sleep and Mindfulness', topic: 'Sleep', date: '2025-09-15', mode: 'In-person', seats: 8, isDefault: true },
-  { id: 3, title: 'Healthy Friendships', topic: 'Relationships', date: '2025-09-18', mode: 'Online', seats: 0, isDefault: true },
+  { id: 1, title: 'Managing Anxiety',    topic: 'Anxiety',       date: '2025-09-10', mode: 'Online',   seats: 12, isDefault: true },
+  { id: 2, title: 'Sleep and Mindfulness', topic: 'Sleep',       date: '2025-09-15', mode: 'In-person', seats: 8,  isDefault: true },
+  { id: 3, title: 'Healthy Friendships', topic: 'Relationships', date: '2025-09-18', mode: 'Online',   seats: 0,  isDefault: true },
 ]
 
 onMounted(() => {
-  // programs with fallback
   try {
     const stored = JSON.parse(localStorage.getItem('programs') || '[]')
     programs.value = Array.isArray(stored) && stored.length ? stored : defaults
-  } catch {
-    programs.value = defaults
-  }
+  } catch { programs.value = defaults }
 
-  // reviews
   reviews.value = loadReviews()
 
-  // preselect via ?programId=
   const pre = Number(route.query.programId || '')
   if (pre) programId.value = pre
   else if (programs.value.length) programId.value = programs.value[0].id
@@ -111,20 +106,19 @@ function saveReviews (list) {
   localStorage.setItem('reviews', JSON.stringify(list))
 }
 
-function findProgram (id) {
-  return programs.value.find(p => p.id === id)
-}
-
 function submitReview () {
-  // gate submission (viewing remains open)
-  if (!isLoggedIn.value) { alert('Please log in to submit a review.'); return }
+  if (!useAuth.isAuthed()) {             // ⬅️ call method on the object
+    alert('Please log in to submit a review.')
+    return
+  }
 
   if (!programId.value || !rating.value) return
-  const p = findProgram(programId.value)
+
+  const p = programs.value.find(x => x.id === Number(programId.value))
   if (!p) return
 
-  const all = loadReviews()
-  const email = (currentUser.value?.email || 'unknown').trim().toLowerCase()
+  const all   = loadReviews()
+  const email = (useAuth.currentUser()?.email || 'unknown').trim().toLowerCase()
 
   // one review per user per program — update if exists
   const idx = all.findIndex(r =>
@@ -134,25 +128,20 @@ function submitReview () {
 
   const entry = {
     id: Date.now(),
-    programId: Number(programId.value),      // NUMBER: matches Programs.vue avg filter
+    programId: Number(programId.value),      // NUMBER so Programs.vue avg matches
     programTitle: p.title,
     rating: Number(rating.value),
     comment: sanitize(comment.value || '').slice(0, 300),
-    userId: currentUser.value?.id || null,
-    userEmail: currentUser.value?.email || 'unknown',
-    createdAt: new Date().toLocaleString()
+    userEmail: useAuth.currentUser()?.email || 'unknown',
+    createdAt: new Date().toLocaleString(),
   }
 
-  if (idx >= 0) {
-    all[idx] = { ...all[idx], rating: entry.rating, comment: entry.comment, createdAt: entry.createdAt }
-  } else {
-    all.unshift(entry)
-  }
+  if (idx >= 0) all[idx] = { ...all[idx], rating: entry.rating, comment: entry.comment, createdAt: entry.createdAt }
+  else all.unshift(entry)
 
   saveReviews(all)
   reviews.value = all
 
-  // clear form
   rating.value = 0
   comment.value = ''
   alert('Review saved!')
