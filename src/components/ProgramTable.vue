@@ -97,8 +97,8 @@ import { ref, onMounted, watch, computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Rating from 'primevue/rating'
-import { sanitize } from '@/utils/security'
-import { useAuth } from '@/composables/useAuth'
+import  { sanitize } from '../utils/security'
+import { useAuth } from '../composables/useAuth'
 
 const { currentUser, isLoggedIn, role } = useAuth()
 const canManage = computed(() => role.value === 'caregiver')

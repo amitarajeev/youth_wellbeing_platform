@@ -1,8 +1,19 @@
 // useAuth.js
-import { sanitize, makeSalt, hashPassword } from './security';
+import { sanitize, makeSalt, hashPassword } from '../utils/security';
 
 const USERS_KEY = 'users';
 const SESSION_KEY = 'session';
+
+export const useAuth = {
+  getUsers,
+  saveUsers,
+  registerUser,
+  login,
+  currentUser,
+  logout,
+  hasRole,
+  isAuthed,
+};
 
 export function getUsers() {
   const arr = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
@@ -63,3 +74,5 @@ export function hasRole(role) {
 export function isAuthed() {
   return !!currentUser();
 }
+
+export default useAuth

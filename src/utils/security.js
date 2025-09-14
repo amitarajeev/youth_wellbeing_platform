@@ -21,7 +21,15 @@ export function makeSalt(len = 16) {
 export async function hashPassword(password, salt) {
   const data = new TextEncoder().encode(password + salt);
   const digest = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(new Uint8Array(digest))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+// 3a) Verify helper (needed by LoginForm.vue)
+export async function verifyPassword(plainPassword, salt, expectedHash) {
+  const hash = await hashPassword(plainPassword, salt);
+  return hash === expectedHash;
 }
 
 // 4) Very light client-side rate limiter for login attempts
@@ -29,18 +37,23 @@ const LOGIN_KEY = 'login-attempts';
 export function canAttemptLogin() {
   const obj = JSON.parse(localStorage.getItem(LOGIN_KEY) || '{"count":0,"until":0}');
   const now = Date.now();
-  if (now < obj.until) return false;            // locked
+  if (now < obj.until) return false; // locked
   return true;
 }
+
 export function recordLoginFailure() {
   const obj = JSON.parse(localStorage.getItem(LOGIN_KEY) || '{"count":0,"until":0}');
   obj.count += 1;
-  if (obj.count >= 5) {                          // lock 2 minutes after 5 consecutive failures
+  if (obj.count >= 5) { // lock 2 minutes after 5 consecutive failures
     obj.until = Date.now() + 2 * 60 * 1000;
     obj.count = 0;
   }
   localStorage.setItem(LOGIN_KEY, JSON.stringify(obj));
 }
+
 export function recordLoginSuccess() {
   localStorage.setItem(LOGIN_KEY, JSON.stringify({ count: 0, until: 0 }));
 }
+
+// keep default export for convenience if you used it elsewhere
+export default sanitize;

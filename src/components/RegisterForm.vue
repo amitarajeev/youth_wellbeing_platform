@@ -52,8 +52,8 @@ import { ref, onMounted } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column  from 'primevue/column'
 
-import { registerUser, getUsers, logout } from '@/composables/useAuth'     // ← secure helpers
-import { sanitize } from '@/utils/security'                           // ← for any free text you persist
+import { registerUser, getUsers, logout } from '../composables/useAuth'     // ← secure helpers
+import { sanitize } from '../utils/security'                           // ← for any free text you persist
 
 const name = ref('')
 const email = ref('')
