@@ -51,9 +51,11 @@
 import { ref, onMounted } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column  from 'primevue/column'
+import { sanitize } from '../utils/security'
+import useAuthDefault, { useAuth as authObj } from '../composables/useAuth'
 
-import { registerUser, getUsers, logout } from '../composables/useAuth'     // ← secure helpers
-import { sanitize } from '../utils/security'                           // ← for any free text you persist
+// Support either import style because useAuth.js exports both:
+const useAuth = authObj || useAuthDefault
 
 const name = ref('')
 const email = ref('')
@@ -63,31 +65,29 @@ const password = ref('')
 const users = ref([])
 
 onMounted(() => {
-  users.value = getUsers()
+  users.value = useAuth.getUsers()
 })
 
 function strongPassword(pw) {
   // ≥8 chars, at least one upper, lower, digit, special, and no spaces
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/.test(pw) && !/\s/.test(pw)
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/.test(pw || '') && !/\s/.test(pw || '')
 }
 
 async function handleRegister() {
-  // Optional UX check (useAuth also validates/normalises)
   if (!strongPassword(password.value)) {
-    alert('Password must be 8+ chars, include upper/lower, a digit, a special character, and no spaces.')
+    alert('Password must be 8+ chars, include upper/lower, a digit, a special, and no spaces.')
     return
   }
 
   try {
-    await registerUser({
-      name: name.value,       // useAuth sanitises before persisting
+    await useAuth.registerUser({
+      name: name.value,
       email: email.value,
-      role: role.value,       // must be one of: youth | caregiver | admin (if you use admin)
+      role: role.value,
       password: password.value
     })
-
     // Refresh table from canonical storage
-    users.value = getUsers()
+    users.value = useAuth.getUsers()
 
     // Reset fields
     name.value = ''
@@ -102,10 +102,10 @@ async function handleRegister() {
 }
 
 function clearUsers() {
-  // Clear users and any logged-in session
   localStorage.removeItem('users')
   users.value = []
-  logout()
+  // If you also want to clear current session upon wipe:
+  localStorage.removeItem('session')
 }
 </script>
 

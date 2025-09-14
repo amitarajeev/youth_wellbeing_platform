@@ -1,4 +1,4 @@
-// security.js
+// src/utils/security.js
 // 1) Sanitize untrusted text (basic XSS guard)
 export function sanitize(str) {
   if (typeof str !== 'string') return '';
@@ -26,7 +26,7 @@ export async function hashPassword(password, salt) {
     .join('');
 }
 
-// 3a) Verify helper (needed by LoginForm.vue)
+// 3a) Verify helper (used by Login)
 export async function verifyPassword(plainPassword, salt, expectedHash) {
   const hash = await hashPassword(plainPassword, salt);
   return hash === expectedHash;

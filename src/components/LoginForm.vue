@@ -1,4 +1,4 @@
-<template>
+<template> 
   <form @submit.prevent="handleLogin" class="mt-4">
     <h3>Login</h3>
 
@@ -19,32 +19,41 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { sanitize, verifyPassword } from '@/utils/security'
-import { useAuth } from '@/composables/useAuth'
+import { canAttemptLogin, recordLoginFailure, recordLoginSuccess, sanitize } from '../utils/security'
+import useAuthDefault, { useAuth as authObj } from '../composables/useAuth'
+
+// Support either import style because useAuth.js exports both:
+const useAuth = authObj || useAuthDefault
 
 const email = ref('')
 const password = ref('')
 const router = useRouter()
-const { loginUser } = useAuth()
 
 async function handleLogin() {
-  const normalized = (email.value || '').trim().toLowerCase()
-  const users = JSON.parse(localStorage.getItem('users') || '[]')
-  const user = users.find(u => (u.email || '').trim().toLowerCase() === normalized)
+  if (!canAttemptLogin()) {
+    alert('Too many failed attempts. Please wait a moment and try again.')
+    return
+  }
 
-  if (!user) {
+  const session = await useAuth.login({
+    email: sanitize((email.value || '').trim().toLowerCase()),
+    password: password.value || ''
+  })
+
+  if (!session) {
+    recordLoginFailure()
     alert('Invalid credentials.')
     return
   }
 
-  // Use the verifier (compares salted hash)
-  const ok = await verifyPassword(password.value, user.salt, user.passwordHash)
-  if (!ok) {
-    alert('Invalid credentials.')
-    return
-  }
-
-  loginUser(user)
-  router.push({ name: 'home' })
+  recordLoginSuccess()
+  alert(`✅ Welcome back, ${session.name}!`)
+  email.value = ''
+  password.value = ''
+  router.push('/') // use route name if you prefer: { name: 'home' }
 }
 </script>
+
+<style scoped>
+/* keep your existing styles */
+</style>

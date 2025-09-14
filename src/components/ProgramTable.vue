@@ -98,7 +98,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Rating from 'primevue/rating'
 import  { sanitize } from '../utils/security'
-import { useAuth } from '../composables/useAuth'
+import { useAuth } from '/composables/useAuth'
 
 const { currentUser, isLoggedIn, role } = useAuth()
 const canManage = computed(() => role.value === 'caregiver')
@@ -151,17 +151,42 @@ function registerProgram(program) {
 }
 
 /* ------- Ratings aggregation from localStorage ------- */
-function getReviews() {
-  try { return JSON.parse(localStorage.getItem('reviews') || '[]') } catch { return [] }
+// 🔐 safe localStorage read
+function getReviews () {
+  try {
+    return JSON.parse(localStorage.getItem('reviews') || '[]')
+  } catch {
+    return []
+  }
 }
-function avgRating(programId) {
-  const r = getReviews().filter(x => x.programId === programId)
-  if (!r.length) return 0
-  const sum = r.reduce((acc, x) => acc + (Number(x.rating) || 0), 0)
-  return sum / r.length
-}
-</script>
 
+// Optional: force refresh if reviews change in another tab
+import { ref, onMounted, onUnmounted } from 'vue'
+const reviewsTick = ref(0)
+function onStorage(e) {
+  if (e.key === 'reviews') {
+    reviewsTick.value++ // triggers re-render so avgRating re-runs
+  }
+}
+onMounted(() => window.addEventListener('storage', onStorage))
+onUnmounted(() => window.removeEventListener('storage', onStorage))
+
+// ✅ normalize IDs so ratings show up
+function avgRating (programId) {
+  // create a reactive dependency so the table refreshes if reviews change in another tab
+  // (no effect on value; it just re-triggers the render)
+  // eslint-disable-next-line no-unused-expressions
+  reviewsTick.value
+
+  const list = getReviews().filter(
+    r => String(r.programId) === String(programId)
+  )
+  if (!list.length) return 0
+  const sum = list.reduce((acc, r) => acc + (Number(r.rating) || 0), 0)
+  return sum / list.length
+}
+
+</script>
 
 <style scoped>
 h2 {

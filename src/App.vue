@@ -1,25 +1,28 @@
 <template>
   <div id="app">
-    <!-- Navigation -->
+    
+
     <NavBar />
 
-    <!-- Main Content -->
-    <main class="container my-4">
-      <router-view />
+    <main class="container py-4">
+      <!-- Smooth page transitions without forcing reloads -->
+      <RouterView v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </RouterView>
     </main>
-
-    <!-- Safety Banner -->
+    
+    <Footer />
     <SafetyBanner />
 
-    <!-- Footer -->
-    <Footer />
   </div>
 </template>
 
 <script setup>
 import NavBar from './components/NavBar.vue'
-import Footer from './components/Footer.vue'
 import SafetyBanner from './components/SafetyBanner.vue'
+import Footer from './components/Footer.vue'
 </script>
 
 <style>

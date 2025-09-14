@@ -1,4 +1,4 @@
-// useAuth.js
+// src/composables/useAuth.js
 import { sanitize, makeSalt, hashPassword } from '../utils/security';
 
 const USERS_KEY = 'users';
@@ -75,4 +75,4 @@ export function isAuthed() {
   return !!currentUser();
 }
 
-export default useAuth
+export default useAuth;

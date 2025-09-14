@@ -1,7 +1,7 @@
 <template>
   <div class="container py-5">
-    <h2 class="text-center mb-4">User Authentication</h2>
-    <div class="row">
+    <h1 class="text-center">User Authentication</h1>
+      <div class="row">
       <!-- Register -->
       <div class="col-md-6">
         <RegisterForm 
