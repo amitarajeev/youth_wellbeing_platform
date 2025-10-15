@@ -1,11 +1,11 @@
 <template>
   <div>
-    <form id="register-form" class="form mt-4" @submit.prevent="handleRegister" novalidate>
+    <form id="register-form" class="form mt-4" @submit.prevent="handleRegister">
       <h2>Register</h2>
 
       <div class="mb-3">
         <label for="name" class="form-label">Full Name</label>
-        <input v-model.trim="name" type="text" id="name" class="form-control" required />
+        <input v-model="name" type="text" id="name" class="form-control" required />
       </div>
 
       <div class="mb-3">
@@ -19,6 +19,7 @@
           <option disabled value="">Select role</option>
           <option value="youth">Youth (13–25)</option>
           <option value="caregiver">Caregiver / Parent</option>
+          <option value="admin">Admin</option>
         </select>
       </div>
 
@@ -28,21 +29,20 @@
       </div>
 
       <button type="submit" class="btn btn-custom">Register</button>
-      <button type="button" class="btn btn-custom ms-2" @click="clearUsers">Clear Users</button>
+      <button type="button" class="btn btn-custom ms-2" @click="clearProfiles">Clear Users</button>
     </form>
 
-    <!-- Registration Table -->
     <h3 class="mt-5">Registered Users</h3>
-    <DataTable 
-      :value="users" 
-      paginator 
-      :rows="5" 
-      responsiveLayout="scroll" 
+    <DataTable
+      :value="profiles"
+      paginator
+      :rows="5"
+      responsiveLayout="scroll"
       class="p-datatable-sm shadow-sm table-responsive"
     >
-      <Column field="name" header="Name" sortable />
+      <Column field="name"  header="Name"  sortable />
       <Column field="email" header="Email" sortable />
-      <Column field="role" header="Role" sortable />
+      <Column field="role"  header="Role"  sortable />
     </DataTable>
   </div>
 </template>
@@ -50,66 +50,62 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import DataTable from 'primevue/datatable'
-import Column  from 'primevue/column'
-import { sanitize } from '../utils/security'
-import useAuthDefault, { useAuth as authObj } from '../composables/useAuth'
+import Column from 'primevue/column'
 
-// Support either import style because useAuth.js exports both:
-const useAuth = authObj || useAuthDefault
+import { useAuth } from '@/composables/useAuth'
+
+// local profiles helper from composable
+const { registerUser, getProfiles } = useAuth
 
 const name = ref('')
 const email = ref('')
 const role = ref('')
 const password = ref('')
 
-const users = ref([])
+const profiles = ref([])
 
 onMounted(() => {
-  users.value = useAuth.getUsers()
+  profiles.value = getProfiles()
 })
 
-function strongPassword(pw) {
-  // ≥8 chars, at least one upper, lower, digit, special, and no spaces
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/.test(pw || '') && !/\s/.test(pw || '')
-}
-
 async function handleRegister() {
-  if (!strongPassword(password.value)) {
-    alert('Password must be 8+ chars, include upper/lower, a digit, a special, and no spaces.')
-    return
-  }
-
   try {
-    await useAuth.registerUser({
+    if (!password.value || password.value.length < 6) {
+      alert('Password must be at least 6 characters.')
+      return
+    }
+
+    await registerUser({
       name: name.value,
       email: email.value,
       role: role.value,
       password: password.value
     })
-    // Refresh table from canonical storage
-    users.value = useAuth.getUsers()
 
-    // Reset fields
+    // refresh local profiles table
+    profiles.value = getProfiles()
+
+    // reset form
     name.value = ''
     email.value = ''
     role.value = ''
     password.value = ''
 
-    alert('✅ Registered successfully!')
-  } catch (err) {
-    alert(err?.message || 'Registration failed.')
+    alert('✅ Registered successfully (via Firebase)!')
+  } catch (e) {
+    alert(e?.message || 'Registration failed.')
   }
 }
 
-function clearUsers() {
-  localStorage.removeItem('users')
-  users.value = []
-  // If you also want to clear current session upon wipe:
-  localStorage.removeItem('session')
+function clearProfiles() {
+  // purely local: remove the profiles list, not Firebase accounts
+  localStorage.setItem('userProfiles', '[]')
+  profiles.value = []
 }
 </script>
 
 <style scoped>
+/* (kept exactly as you asked) */
 form {
   background: #f8f9fa;
   padding: 20px;
