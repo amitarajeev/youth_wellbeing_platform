@@ -1,0 +1,41 @@
+type User @table {
+  username: String!
+  email: String!
+  createdAt: Timestamp!
+  displayName: String
+  dob: Date
+  profilePictureUrl: String
+}
+
+type MoodEntry @table {
+  user: User!
+  date: Date!
+  moodValue: Int!
+  notes: String
+}
+
+type JournalEntry @table {
+  user: User!
+  title: String!
+  content: String!
+  createdAt: Timestamp!
+  tags: [String]
+}
+
+type Resource @table {
+  title: String!
+  type: String!
+  contentUrl: String!
+  description: String
+  thumbnailUrl: String
+  category: String
+}
+
+type UserResource @table(key: ["user", "resource"]) {
+  user: User!
+  resource: Resource!
+  createdAt: Timestamp!
+  saved: Boolean
+  completed: Boolean
+  completionDate: Timestamp
+}
