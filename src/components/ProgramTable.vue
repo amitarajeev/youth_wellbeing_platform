@@ -1,59 +1,77 @@
 <template>
   <div>
-    <h2 class="mb-3">Programs</h2>
+    <!-- Toolbar (matches the Users section UX) -->
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <div class="input-group" style="max-width: 420px">
+        <span class="input-group-text">Search all</span>
+        <input
+          v-model="filters['global'].value"
+          type="text"
+          class="form-control"
+          placeholder="Type to search title, topic, date, mode…"
+        />
+        <button class="btn btn-custom" @click="clearFilters">Clear</button>
+      </div>
 
-    <!-- Caregiver-only controls -->
-    <div v-if="canManage" class="mb-4">
-      <form @submit.prevent="addProgram">
-        <div class="row g-2">
-          <div class="col-md-4">
-            <input v-model="newProgram.title" type="text" class="form-control" placeholder="Program Title" required />
-          </div>
-          <div class="col-md-3">
-            <input v-model="newProgram.topic" type="text" class="form-control" placeholder="Topic" required />
-          </div>
-          <div class="col-md-3">
-            <input v-model="newProgram.date" type="date" class="form-control" required />
-          </div>
-          <div class="col-md-2">
-            <select v-model="newProgram.mode" class="form-select" required>
-              <option disabled value="">Mode</option>
-              <option value="Online">Online</option>
-              <option value="In-person">In-person</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="row g-2 mt-2">
-          <div class="col-md-3">
-            <input v-model.number="newProgram.seats" type="number" class="form-control" placeholder="Seats" min="1" required />
-          </div>
-          <div class="col-md-9 d-flex gap-2">
-            <button type="submit" class="btn btn-custom">Add Program</button>
-            <button type="button" class="btn btn-custom" @click="clearForm">Clear Form</button>
-            <button type="button" class="btn btn-custom ms-auto" @click="clearPrograms">Clear Programs</button>
-          </div>
-        </div>
-      </form>
+      <div class="ms-lg-auto d-flex gap-2">
+        <button class="btn btn-custom" @click="exportCSV()">Export CSV</button>
+        <button class="btn btn-custom" @click="exportPDF()">Export PDF</button>
+      </div>
     </div>
 
-    <h2 class="mb-3">Upcoming Programs</h2>
-
+    <!-- Interactive DataTable -->
     <div class="table-responsive-fluid">
       <DataTable
         :value="programs"
-        paginator
-        :rows="5"
-        responsiveLayout="stack"
+        dataKey="id"
+        :paginator="true"
+        :rows="10"
+        :rowsPerPageOptions="[10,20,50]"
+        :responsiveLayout="'stack'"
         breakpoint="992px"
-        sortMode="multiple"
         class="p-datatable-sm shadow-sm"
+        :sortMode="'multiple'"
+        :filters="filters"
+        :globalFilterFields="['title','topic','date','mode','seats']"
       >
-        <Column field="title" header="Title" sortable />
-        <Column field="topic" header="Topic" sortable />
-        <Column field="date" header="Date" sortable />
-        <Column field="mode" header="Mode" sortable />
-        <Column field="seats" header="Seats Left" sortable />
+        <!-- Title -->
+        <Column field="title" header="Title" sortable filter :showFilterMenu="false">
+          <template #filter="{ filterModel }">
+            <input v-model="filterModel.value" type="text" class="form-control" placeholder="Search title" />
+          </template>
+        </Column>
+
+        <!-- Topic -->
+        <Column field="topic" header="Topic" sortable filter :showFilterMenu="false">
+          <template #filter="{ filterModel }">
+            <input v-model="filterModel.value" type="text" class="form-control" placeholder="Search topic" />
+          </template>
+        </Column>
+
+        <!-- Date -->
+        <Column field="date" header="Date" sortable filter :showFilterMenu="false">
+          <template #filter="{ filterModel }">
+            <input v-model="filterModel.value" type="text" class="form-control" placeholder="yyyy-mm-dd" />
+          </template>
+        </Column>
+
+        <!-- Mode -->
+        <Column field="mode" header="Mode" sortable filter :showFilterMenu="false">
+          <template #filter="{ filterModel }">
+            <select v-model="filterModel.value" class="form-select">
+              <option value="">All</option>
+              <option value="Online">Online</option>
+              <option value="In-person">In-person</option>
+            </select>
+          </template>
+        </Column>
+
+        <!-- Seats -->
+        <Column field="seats" header="Seats Left" sortable filter :showFilterMenu="false">
+          <template #filter="{ filterModel }">
+            <input v-model="filterModel.value" type="number" class="form-control" placeholder="e.g. 5" />
+          </template>
+        </Column>
 
         <!-- Avg Rating -->
         <Column header="Rating">
@@ -71,7 +89,7 @@
             <div class="d-flex justify-content-center gap-2">
               <button
                 class="btn btn-custom btn-sm"
-                @click="registerProgram(slotProps.data)"
+                @click="$emit('register', slotProps.data)"
                 :disabled="slotProps.data.seats === 0 || !isLoggedIn"
                 :title="!isLoggedIn ? 'Login to register' : ''"
               >
@@ -93,103 +111,136 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Rating from 'primevue/rating'
-import  { sanitize } from '../utils/security'
-import { useAuth } from '/composables/useAuth'
+import { useAuth } from '@/composables/useAuth'
 
-const { currentUser, isLoggedIn, role } = useAuth()
-const canManage = computed(() => role.value === 'caregiver')
-
-const defaultPrograms = [
-  { id: 1, title: 'Managing Anxiety', topic: 'Anxiety', date: '2025-09-10', mode: 'Online', seats: 12, isDefault: true },
-  { id: 2, title: 'Sleep and Mindfulness', topic: 'Sleep', date: '2025-09-15', mode: 'In-person', seats: 8, isDefault: true },
-  { id: 3, title: 'Healthy Friendships', topic: 'Relationships', date: '2025-09-18', mode: 'Online', seats: 0, isDefault: true },
-]
-
-const programs = ref([])
-const newProgram = ref({ title: '', topic: '', date: '', mode: '', seats: 1 })
-
-onMounted(() => {
-  const stored = localStorage.getItem('programs')
-  programs.value = stored ? JSON.parse(stored) : defaultPrograms
+/**
+ * This component assumes the parent (Programs.vue) owns the programs array
+ * and passes it in. If you currently keep programs locally here, you can
+ * remove the `defineProps` and use your existing state instead.
+ */
+const props = defineProps({
+  programs: { type: Array, required: true }
 })
 
-watch(programs, (val) => {
-  localStorage.setItem('programs', JSON.stringify(val))
-}, { deep: true })
+const { isLoggedIn } = useAuth()
 
-function addProgram() {
-  programs.value.push({
-    id: Date.now(),
-    title: sanitize(newProgram.value.title),
-    topic: sanitize(newProgram.value.topic),
-    date: newProgram.value.date,
-    mode: newProgram.value.mode,
-    seats: Number(newProgram.value.seats) || 1,
-    isDefault: false
-  })
-  clearForm()
-}
+/* PrimeVue-like filters without importing primevue/api (build-safe) */
+const filters = ref({
+  global: { value: null, matchMode: 'contains' },
+  title:  { value: null, matchMode: 'contains' },
+  topic:  { value: null, matchMode: 'contains' },
+  date:   { value: null, matchMode: 'contains' },
+  mode:   { value: null, matchMode: 'equals'   },
+  seats:  { value: null, matchMode: 'equals'   }
+})
 
-function clearForm() {
-  newProgram.value = { title: '', topic: '', date: '', mode: '', seats: 1 }
-}
-
-function clearPrograms() {
-  programs.value = programs.value.filter(p => p.isDefault === true)
-}
-
-function registerProgram(program) {
-  if (!isLoggedIn.value) return
-  if (program.seats > 0) {
-    program.seats -= 1
-    alert(`You registered for: ${program.title}`)
-  }
+function clearFilters () {
+  Object.keys(filters.value).forEach(k => { filters.value[k].value = null })
 }
 
 /* ------- Ratings aggregation from localStorage ------- */
-// 🔐 safe localStorage read
 function getReviews () {
-  try {
-    return JSON.parse(localStorage.getItem('reviews') || '[]')
-  } catch {
-    return []
-  }
+  try { return JSON.parse(localStorage.getItem('reviews') || '[]') } catch { return [] }
 }
-
-// Optional: force refresh if reviews change in another tab
-import { ref, onMounted, onUnmounted } from 'vue'
-const reviewsTick = ref(0)
-function onStorage(e) {
-  if (e.key === 'reviews') {
-    reviewsTick.value++ // triggers re-render so avgRating re-runs
-  }
-}
-onMounted(() => window.addEventListener('storage', onStorage))
-onUnmounted(() => window.removeEventListener('storage', onStorage))
-
-// ✅ normalize IDs so ratings show up
 function avgRating (programId) {
-  // create a reactive dependency so the table refreshes if reviews change in another tab
-  // (no effect on value; it just re-triggers the render)
-  // eslint-disable-next-line no-unused-expressions
-  reviewsTick.value
-
-  const list = getReviews().filter(
-    r => String(r.programId) === String(programId)
-  )
-  if (!list.length) return 0
-  const sum = list.reduce((acc, r) => acc + (Number(r.rating) || 0), 0)
-  return sum / list.length
+  const r = getReviews().filter(x => String(x.programId) === String(programId))
+  if (!r.length) return 0
+  const sum = r.reduce((acc, x) => acc + (Number(x.rating) || 0), 0)
+  return sum / r.length
 }
 
+/* ------- Export helpers (CSV & PDF) ------- */
+function exportCSV () {
+  const headers = ['Title','Topic','Date','Mode','Seats','AvgRating']
+  const rows = (props.programs || []).map(p => ([
+    safe(p.title), safe(p.topic), safe(p.date), safe(p.mode),
+    String(p.seats),
+    avgRating(p.id).toFixed(1)
+  ]))
+  const csv = [headers, ...rows].map(r =>
+    r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+  ).join('\r\n')
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'programs.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function exportPDF () {
+  const head = `
+    <style>
+      body { font-family: Arial, sans-serif; padding: 16px; }
+      h1 { margin-bottom: 12px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #ccc; padding: 8px; }
+      th { background: #f2f2f2; text-align: left; }
+    </style>
+  `;
+
+  const rows = (props.programs || []).map(p => `
+    <tr>
+      <td>${escapeHtml(p.title)}</td>
+      <td>${escapeHtml(p.topic)}</td>
+      <td>${escapeHtml(p.date)}</td>
+      <td>${escapeHtml(p.mode)}</td>
+      <td>${String(p.seats)}</td>
+      <td>${Number(avgRating(p.id)).toFixed(1)}</td>
+    </tr>
+  `).join('');
+
+  // Use body onload to trigger print (no <script> tag inside)
+  const html = `
+    <!doctype html>
+    <html>
+      <head>${head}</head>
+      <body onload="window.print()">
+        <h1>Programs</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Topic</th>
+              <th>Date</th>
+              <th>Mode</th>
+              <th>Seats</th>
+              <th>Rating</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const w = window.open('', '_blank');
+  if (w) {
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+}
+
+function escapeHtml (s = '') {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;')
+}
+function safe (s = '') {
+  return String(s ?? '').trim()
+}
 </script>
 
 <style scoped>
-h2 {
-  font-weight: 600;
-}
+/* No visual changes to your theme; toolbar matches Users section */
 </style>
