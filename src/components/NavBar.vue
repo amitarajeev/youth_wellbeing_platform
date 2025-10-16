@@ -47,6 +47,11 @@
               Login
             </router-link>
           </li>
+             <li class="nav-item">
+            <router-link to="/email" class="nav-link" exact-active-class="active">
+              Email
+            </router-link>
+          </li>
         </ul>
       </div>
     </div>

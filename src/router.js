@@ -6,6 +6,7 @@ import Programs from './pages/Programs.vue'
 import Resources from './pages/Resources.vue'
 import Auth from './pages/Auth.vue'
 import Reviews from './pages/Reviews.vue'
+import Email from './pages/Email.vue'
 
 const routes = [
   { path: '/', name: 'home', component: Home },
@@ -16,6 +17,7 @@ const routes = [
   { path: '/reviews', name: 'reviews', component: Reviews},
 
   { path: '/auth', name: 'auth', component: Auth },
+  { path: '/email', name: 'email', component: Email },
 
   // Catch-all redirects to Home
   { path: '/:pathMatch(.*)*', redirect: { name: 'home' } },
