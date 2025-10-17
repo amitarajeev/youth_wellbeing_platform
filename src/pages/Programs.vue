@@ -161,6 +161,9 @@ import Column from 'primevue/column'
 import Rating from 'primevue/rating'
 import { sanitize } from '../utils/security'
 
+/* === Cloud Function URL for registration email (added) === */
+const SEND_REG_URL = 'https://sendregistrationemail-6rwlj53o6q-ts.a.run.app'
+
 // ---- Safe session access (works regardless of composable shape) ----
 function getSession() {
   try {
@@ -230,11 +233,35 @@ function clearPrograms() {
   try { localStorage.setItem('programs', JSON.stringify(programs.value)) } catch {}
 }
 
-function registerProgram(program) {
+/* === Register + send confirmation email (updated) === */
+async function registerProgram(program) {
   if (!isLoggedIn.value) return
   if (program.seats > 0) {
     program.seats -= 1
     alert(`You registered for: ${program.title}`)
+
+    // fire the confirmation email via Cloud Function (best-effort)
+    try {
+      const to =
+        (session.value?.email || session.value?.user?.email || '').trim()
+      if (to) {
+        await fetch(SEND_REG_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to,
+            program: {
+              title: program.title,
+              topic: program.topic,
+              date: program.date,
+              mode: program.mode
+            }
+          })
+        })
+      }
+    } catch (e) {
+      console.warn('sendRegistrationEmail failed (non-blocking):', e)
+    }
   }
 }
 

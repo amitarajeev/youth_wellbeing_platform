@@ -128,6 +128,9 @@ import useAuth from '../composables/useAuth'
 
 const route = useRoute()
 
+// === Cloud Function URL (added) ===
+const MODERATE_URL = 'https://moderatereview-6rwlj53o6q-ts.a.run.app'
+
 // reactive state
 const programs = ref([])
 const reviews  = ref([])
@@ -136,11 +139,11 @@ const programId = ref('')
 const rating    = ref(0)
 const comment   = ref('')
 
-// ---- Interactive filters for PrimeVue (no primevue/api import) ----
+// ---- Interactive filters (unchanged) ----
 const filters = ref({
   global:       { value: null, matchMode: 'contains' },
   programTitle: { value: null, matchMode: 'contains' },
-  rating:       { value: null, matchMode: 'gte'      }, // user can type a minimum rating
+  rating:       { value: null, matchMode: 'gte'      },
   comment:      { value: null, matchMode: 'contains' },
   userEmail:    { value: null, matchMode: 'contains' },
   createdAt:    { value: null, matchMode: 'contains' },
@@ -175,12 +178,39 @@ function saveReviews (list) {
   localStorage.setItem('reviews', JSON.stringify(list))
 }
 
-function submitReview () {
+// === submitReview now calls the moderation function (added) ===
+async function submitReview () {
   if (!useAuth.isAuthed()) {
     alert('Please log in to submit a review.')
     return
   }
   if (!programId.value || !rating.value) return
+
+  // call Cloud Function to moderate the comment
+  let cleanedText = (comment.value || '')
+  try {
+    const r = await fetch(MODERATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: cleanedText })
+    })
+    if (r.ok) {
+      const data = await r.json()
+      if (!data.allowed) {
+        // show reasons and stop
+        alert(`Your comment was blocked by moderation: ${ (data.reasons || []).join(', ') }`)
+        return
+      }
+      cleanedText = data.cleaned || cleanedText
+    } else {
+      // if the function errors, fail open (still save locally) but inform user
+      console.warn('Moderation function returned non-200', r.status)
+    }
+  } catch (e) {
+  console.warn('Moderation function error', e);
+  alert('Unable to verify your comment right now. Please try again in a moment.');
+  return;     // ⬅️ fail closed; do not save
+}
 
   const p = programs.value.find(x => x.id === Number(programId.value))
   if (!p) return
@@ -198,7 +228,8 @@ function submitReview () {
     programId: Number(programId.value),
     programTitle: p.title,
     rating: Number(rating.value),
-    comment: sanitize(comment.value || '').slice(0, 300),
+    // use sanitized + moderated text
+    comment: sanitize(cleanedText || '').slice(0, 300),
     userEmail: useAuth.currentUser()?.email || 'unknown',
     createdAt: new Date().toLocaleString(),
   }
