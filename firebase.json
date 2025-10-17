@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "Y",
+    "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -24,7 +24,6 @@
         "firebase-debug.*.log",
         "*.local"
       ]
-     
     }
   ]
 }
