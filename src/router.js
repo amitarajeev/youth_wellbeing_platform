@@ -7,6 +7,7 @@ import Resources from './pages/Resources.vue'
 import Auth from './pages/Auth.vue'
 import Reviews from './pages/Reviews.vue'
 import Email from './pages/Email.vue'
+import Map from './pages/Map.vue'
 
 const routes = [
   { path: '/', name: 'home', component: Home },
@@ -18,6 +19,7 @@ const routes = [
 
   { path: '/auth', name: 'auth', component: Auth },
   { path: '/email', name: 'email', component: Email },
+  { path: '/map', name: 'map', component: Map },
 
   // Catch-all redirects to Home
   { path: '/:pathMatch(.*)*', redirect: { name: 'home' } },

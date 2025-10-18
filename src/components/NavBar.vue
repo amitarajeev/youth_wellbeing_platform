@@ -52,6 +52,11 @@
               Email
             </router-link>
           </li>
+          <li class="nav-item">
+            <router-link to="/map" class="nav-link" exact-active-class="active">
+              Map
+            </router-link>
+          </li>
         </ul>
       </div>
     </div>
