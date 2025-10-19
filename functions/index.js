@@ -151,3 +151,66 @@ function escapeHtml (s = '') {
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#039;');
 }
+
+
+// === Bulk Email ===
+exports.sendBulkEmail = onRequest(
+  { region: 'australia-southeast1', secrets: ['SENDGRID_API_KEY','SENDER_EMAIL'] },
+  (req, res) => {
+    cors(req, res, async () => {
+      try {
+        if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' });
+        const { to = [], subject, html, text } = req.body || {};
+        if (!Array.isArray(to) || to.length === 0 || !subject) {
+          return res.status(400).json({ error: 'Missing to[] or subject' });
+        }
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+        await sgMail.sendMultiple({
+          to,
+          from: process.env.SENDER_EMAIL,
+          subject,
+          html: html || undefined,
+          text: text || undefined,
+        });
+        return res.json({ ok: true, sent: to.length });
+      } catch (err) {
+        console.error('sendBulkEmail error:', err?.response?.body || err);
+        return res.status(500).json({ error: 'bulk_send_failed' });
+      }
+    });
+  }
+);
+
+// === Public API (2 routes) ===
+const admin = require('firebase-admin');
+try { admin.app(); } catch { admin.initializeApp(); }
+const db = admin.firestore();
+
+function ok(res, data){ res.set('Access-Control-Allow-Origin', '*'); return res.json(data); }
+function preflight(req, res){
+  if (req.method==='OPTIONS'){
+    res.set('Access-Control-Allow-Origin','*');
+    res.set('Access-Control-Allow-Headers','Content-Type');
+    return res.status(204).send('');
+  }
+}
+
+/** GET /api/programs */
+exports.apiPrograms = onRequest({ region: 'australia-southeast1' }, async (req, res) => {
+  preflight(req, res); if (req.method!=='GET') return res.status(405).send('GET only');
+  try {
+    const snap = await db.collection('programs').limit(200).get().catch(()=>null)
+    const items = snap ? snap.docs.map(d=>({ id:d.id, ...d.data() })) : []
+    return ok(res, { items });
+  } catch (e) { return res.status(500).json({ error:'server_error' }) }
+});
+
+/** GET /api/reviews */
+exports.apiReviews = onRequest({ region: 'australia-southeast1' }, async (req, res) => {
+  preflight(req, res); if (req.method!=='GET') return res.status(405).send('GET only');
+  try {
+    const snap = await db.collection('reviews').orderBy('createdAt','desc').limit(200).get().catch(()=>null)
+    const items = snap ? snap.docs.map(d=>({ id:d.id, ...d.data() })) : []
+    return ok(res, { items });
+  } catch (e) { return res.status(500).json({ error:'server_error' }) }
+});

@@ -8,6 +8,8 @@ import Auth from './pages/Auth.vue'
 import Reviews from './pages/Reviews.vue'
 import Email from './pages/Email.vue'
 import Map from './pages/Map.vue'
+import Dashboard from './pages/AdminDashboard.vue'
+import Calendar from './pages/CalendarBooking.vue'
 
 const routes = [
   { path: '/', name: 'home', component: Home },
@@ -20,6 +22,9 @@ const routes = [
   { path: '/auth', name: 'auth', component: Auth },
   { path: '/email', name: 'email', component: Email },
   { path: '/map', name: 'map', component: Map },
+  { path: '/dashboard', name: 'dashboard', component: Dashboard },
+  { path: '/calendar', name: 'calendar', component: Calendar },
+
 
   // Catch-all redirects to Home
   { path: '/:pathMatch(.*)*', redirect: { name: 'home' } },

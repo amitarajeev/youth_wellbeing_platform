@@ -57,6 +57,16 @@
               Map
             </router-link>
           </li>
+          <li class="nav-item">
+            <router-link to="/dashboard" class="nav-link" exact-active-class="active">
+              Dashboard
+            </router-link>
+          </li>
+          <li class="nav-item">
+            <router-link to="/calendar" class="nav-link" exact-active-class="active">
+              Calendar
+            </router-link>
+          </li>
         </ul>
       </div>
     </div>
