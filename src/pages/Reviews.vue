@@ -1,13 +1,14 @@
 <template>
   <section class="container py-4">
-    <h1 class="mb-3">Program Reviews</h1>
+    <!-- a11y: focus target so SR/keyboard users land on content -->
+    <h1 id="page-title" class="mb-3" tabindex="-1">Program Reviews</h1>
 
-    <!-- Write review form (unchanged) -->
+    <!-- Write review form (unchanged logic; labels now associated) -->
     <form @submit.prevent="submitReview" class="mb-4">
       <div class="row g-2">
         <div class="col-md-4">
-          <label class="form-label">Program</label>
-          <select v-model.number="programId" class="form-select" required>
+          <label class="form-label" :for="'rv-program'">Program</label>
+          <select id="rv-program" v-model.number="programId" class="form-select" required>
             <option disabled value="">Select a program</option>
             <option v-for="p in programs" :key="p.id" :value="p.id">
               {{ p.title }} ({{ p.date }})
@@ -16,22 +17,25 @@
         </div>
 
         <div class="col-md-4">
-          <label class="form-label">Rating</label>
+          <label class="form-label" :for="'rv-rating'">Rating</label>
           <div class="d-flex align-items-center">
-            <Rating v-model="rating" :cancel="false" />
-            <span class="ms-2">{{ rating }}</span>
+            <Rating id="rv-rating" v-model="rating" :cancel="false" aria-label="Star rating from 1 to 5" />
+            <span class="ms-2" aria-live="polite">{{ rating }}</span>
           </div>
         </div>
 
         <div class="col-12 mt-2">
-          <label class="form-label">Comment (optional)</label>
+          <label class="form-label" :for="'rv-comment'">Comment (optional)</label>
           <textarea
+            id="rv-comment"
             v-model="comment"
             class="form-control"
             rows="3"
             maxlength="300"
+            aria-describedby="rv-comment-help"
             placeholder="Share your thoughts (max 300 chars)"
           ></textarea>
+          <small id="rv-comment-help" class="text-muted">Max 300 characters.</small>
         </div>
       </div>
 
@@ -59,6 +63,11 @@
       </div>
     </div>
 
+    <!-- a11y: caption that describes the DataTable for SRs -->
+    <p id="reviews-caption" class="sr-only">
+      List of recent reviews with program, rating, comment, author and time.
+    </p>
+
     <!-- Interactive table -->
     <div class="table-responsive-fluid">
       <DataTable
@@ -72,6 +81,7 @@
         sortMode="multiple"
         :filters="filters"
         :globalFilterFields="['programTitle','comment','userEmail','createdAt']"
+        aria-describedby="reviews-caption"
       >
         <Column field="programTitle" header="Program" sortable filter :showFilterMenu="false">
           <template #filter="{ filterModel }">
@@ -118,14 +128,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Rating from 'primevue/rating'
 import { sanitize } from '../utils/security'
 import useAuth from '../composables/useAuth'
+import { useAnnouncer } from '@/composables/useAnnouncer'
 
+const { announce } = useAnnouncer()
 const route = useRoute()
 
 // === Cloud Function URL (added) ===
@@ -159,6 +171,9 @@ const defaults = [
 ]
 
 onMounted(() => {
+  // Move focus to H1 on load (a11y)
+  nextTick(() => document.getElementById('page-title')?.focus())
+
   try {
     const stored = JSON.parse(localStorage.getItem('programs') || '[]')
     programs.value = Array.isArray(stored) && stored.length ? stored : defaults
@@ -181,6 +196,7 @@ function saveReviews (list) {
 // === submitReview now calls the moderation function (added) ===
 async function submitReview () {
   if (!useAuth.isAuthed()) {
+    announce('Please log in to submit a review.')
     alert('Please log in to submit a review.')
     return
   }
@@ -197,20 +213,21 @@ async function submitReview () {
     if (r.ok) {
       const data = await r.json()
       if (!data.allowed) {
-        // show reasons and stop
-        alert(`Your comment was blocked by moderation: ${ (data.reasons || []).join(', ') }`)
+        const msg = `Your comment was blocked by moderation: ${(data.reasons || []).join(', ')}`
+        announce(msg)
+        alert(msg)
         return
       }
       cleanedText = data.cleaned || cleanedText
     } else {
-      // if the function errors, fail open (still save locally) but inform user
       console.warn('Moderation function returned non-200', r.status)
     }
   } catch (e) {
-  console.warn('Moderation function error', e);
-  alert('Unable to verify your comment right now. Please try again in a moment.');
-  return;     // ⬅️ fail closed; do not save
-}
+    console.warn('Moderation function error', e)
+    announce('Unable to verify your comment right now. Please try again in a moment.')
+    alert('Unable to verify your comment right now. Please try again in a moment.')
+    return   // fail closed; do not save
+  }
 
   const p = programs.value.find(x => x.id === Number(programId.value))
   if (!p) return
@@ -242,6 +259,8 @@ async function submitReview () {
 
   rating.value = 0
   comment.value = ''
+
+  announce('Review saved successfully.')
   alert('Review saved!')
 }
 

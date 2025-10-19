@@ -1,0 +1,35 @@
+/* src/styles/a11y.css */
+
+/* 1) Clear, visible focus outlines for keyboard users */
+:where(a, button, input, select, textarea, [tabindex]) :focus,
+:where(a, button, input, select, textarea, [tabindex]):focus {
+  outline: 3px solid #1e90ff;      /* meets contrast */
+  outline-offset: 2px;
+}
+/* Hidden off-screen by default */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: -999px;
+  display: inline-block;
+  z-index: 10000;        /* above header */
+}
+
+/* Reveal just below the header when focused via keyboard */
+.skip-link:focus,
+.skip-link:focus-visible {
+  position: fixed;
+  left: 1rem;
+  top: 64px;             /* tweak if your header is taller/shorter */
+  outline: 3px solid #1e90ff;
+  outline-offset: 2px;
+}
+
+
+/* 4) Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* 5) Ensure custom purple/gradient buttons keep AA contrast on text */
+.btn-custom { color: #fff; }
