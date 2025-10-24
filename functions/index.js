@@ -58,7 +58,7 @@ exports.sendEmail = onRequest(
     });
   }
 );
-
+ 
 // -------- 1) Review moderation (content-safety) ----------
 exports.moderateReview = onRequest({ region: "australia-southeast1" }, (req, res) => {
   cors(req, res, () => {
